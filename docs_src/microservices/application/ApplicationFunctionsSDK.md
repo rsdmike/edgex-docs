@@ -7,12 +7,12 @@ Welcome the App Functions SDK for EdgeX. This sdk is meant to provide all the pl
 
 The context parameter passed to each function/transform provides operations and data associated with each execution of the pipeline. Let's take a look at a few of the properties that are available:
 
-```go
+```golang
 type Context struct {
-	// ID of the EdgeX Event (will be filled for a received JSON Event)
+	// ID of the EdgeX Event -- will be filled for a received JSON Event
 	EventID string
 	
-	// Checksum of the EdgeX Event (will be filled for a received CBOR Event)
+	// Checksum of the EdgeX Event -- will be filled for a received CBOR Event
 	EventChecksum string
 	
 	// This is the ID used to track the EdgeX event through entire EdgeX framework.
@@ -181,7 +181,7 @@ This `HTTPSender` instance is used to access the following functions that will u
   
   - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
 - `NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool)` - This function returns a `MQTTSecretSender` instance intialized with the options specfied in the `MQTTSecretConfig`.
-```go
+```golang
 type MQTTSecretConfig struct {
     // BrokerAddress should be set to the complete broker address i.e. mqtts://mosquitto:8883/mybroker
     BrokerAddress string
@@ -279,7 +279,7 @@ It is not uncommon to require your own API endpoints when building an app servic
 - /api/v1/config
 - /api/v1/trigger
 To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) error` function provided on the sdk. Here's an example:
-```go
+```golang
 edgexSdk.AddRoute("/myroute", func(writer http.ResponseWriter, req *http.Request) {
     context := req.Context().Value(appsdk.SDKKey).(*appsdk.AppFunctionsSDK) 
 		context.LoggingClient.Info("TEST") // alternative to edgexSdk.LoggingClient.Info("TEST")
@@ -358,51 +358,76 @@ The following command line options are available
   -s    
   -skipVersionCheck
         Indicates the service should skip the Core Service's version compatibility check.
+  -sk
+  --serviceKey                
+        Overrides the service key used with Registry and/or Configuration Providers. 
+        If the name provided contains the text `<profile>`, this text will be replaced with 
+        the name of the profile used..
 ```
 
 Examples:
 
 ```
-simple-filter-xml -r -c=./res -p=docker
+simple-filter-xml -r -c=./res -p=http-export
 ```
 
 or
 
 ```
-simple-filter-xml --registry --confdir=./res --profile=docker
+simple-filter-xml --registry --confdir=./res --profile=mqtt-export
 ```
 
 ### Environment Variable Overrides
 
-All the configuration settings from the configuration.toml file can be overridden by environment variables. Except for two special cases listed below, the overrides **only** occur when the configuration values are first pushed into the Registry. Once the values are in the Registry, the Registry values are always used. 
+All the configuration settings from the configuration.toml file can be overridden by environment variables.  
 
 The environment variable names have the following format:
 
 ```
-<TOML Key>
-<TOML Section>_<TOML Key>
-<TOML Section>_<TOML Sub-Section>_<TOML Key>
+<TOML KEY>
+<TOML SECTION>_<TOML KEY>
+<TOML SECTION>_<TOML SUB-SECTION>_<TOML KEY>
 ```
+
+> *Note: With the Geneva release CamelCased environment variable names are deprecated. Instead use all upper case environment variable names as in the example below.*
 
 Examples:
 
 ```
 TOML   : FailLimit = 30
-ENVVAR : FailLimit=100
+ENVVAR : FAILLIMIT=100
 
 TOML   : [Logging]
 		 EnableRemote = false
-ENVVAR : Logging.EnableRemote=true
+ENVVAR : LOGGING.ENABLEREMOTE=true
 
 TOML   : [Clients]
   			[Clients.CoreData]
   			Host = 'localhost'
-ENVVAR : Clients_CoreData_Host=edgex-core-data
+ENVVAR : CLIENTS_COREDATA_HOST=edgex-core-data
+```
+
+#### EDGEX_SERVICE_KEY
+
+This environment variable overrides the service key, used with Registry and/or Configuration Provider.
+
+If the name provided contains the text `<profile>` , this text will be replaced with the name of the profile used.
+
+Example:
+
+```
+EDGEX_SERVICE_KEY=AppService-<profile>-mycloud
+and profile used is http-export 
+then the service name will be:
+
+   AppService-http-export-mycloud
 ```
 
 #### edgex_registry
 
-This environment variable overrides the Registry connection information and occurs every time the application service starts. The value is in the format of a URL.
+**[Deprecated]** This environment variable overrides the Registry connection information and occurs every time the application service starts. The value is in the format of a URL.
+
+> *Note: This environment variable override has been deprecated in the Geneva Release. Instead, use configuration overrides of **REGISTRY_PROTOCOL** and/or **REGISTRY_HOST** and/or **REGISTRY_PORT***
 
 ```
 edgex_registry=consul://edgex-core-consul:8500
@@ -415,7 +440,9 @@ This sets the Registry information fields as follows:
 
 #### edgex_service
 
-This environment variable overrides the Service connection information and occurs every time the application service starts. The value is in the format of a URL.
+**[Deprecated]** This environment variable overrides the Service connection information and occurs every time the application service starts. The value is in the format of a URL.
+
+> *Note: This environment variable override has been deprecated in the Geneva Release. Instead, use configuration overrides of **SERVICE_PROTOCOL** and/or **SERVICE_HOST** and/or **SERVICE_PORT***
 
 ```
 edgex_service=http://192.168.1.2:4903
@@ -426,9 +453,11 @@ This sets the Service information fields as follows:
     Port: 4903
 ```
 
-#### edgex_profile
+#### edgex_profile / EDGEX_PROFILE
 
 This environment variable overrides the command line `profile` argument. It will replace the current value passed via the `-p` or `--profile`, if one exists. If not specified it will add the `--profile` argument. This is useful when running the service via docker-compose.
+
+> *Note: The lower case version has been deprecated* in the Geneva release. Instead use upper case version **EDGEX_PROFILE**
 
 Using docker-compose:
 
@@ -436,7 +465,7 @@ Using docker-compose:
   app-service-configurable-rules:
     image: edgexfoundry/docker-app-service-configurable:1.1.0
     environment: 
-      - edgex_profile : "rules-engine"
+      - EDGEX_PROFILE : "rules-engine"
     ports:
       - "48095:48095"
     container_name: edgex-app-service-configurable
