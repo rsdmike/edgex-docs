@@ -7,7 +7,7 @@ Welcome the App Functions SDK for EdgeX. This sdk is meant to provide all the pl
 
 The context parameter passed to each function/transform provides operations and data associated with each execution of the pipeline. Let's take a look at a few of the properties that are available:
 
-```golang
+```go
 type Context struct {
 	// ID of the EdgeX Event -- will be filled for a received JSON Event
 	EventID string
@@ -71,7 +71,7 @@ The `CommandClient` exposed on the context is available to leverage Support Noti
 
 Each of the clients above is only initialized if the Clients section of the configuration contains an entry for the service associated with the Client API. If it isn't in the configuration the client will be `nil`. Your code must check for `nil` to avoid panic in case it is missing from the configuration. Only add the clients to your configuration that your Application Service will actually be using. All application services need the `Logging` and many will need `Core-Data`. The following is an example `Clients` section of a configuration.toml with all supported clients specified:
 
-```
+```toml
 [Clients]
   [Clients.Logging]
   Protocol = "http"
@@ -120,9 +120,11 @@ Each of the clients above is only initialized if the Clients section of the conf
 
 All transforms define a type and a `New` function which is used to initialize an instance of the type with the  required parameters. These instances returned by these `New` functions give access to their appropriate pipeline function pointers when build  the function pipeline.
 
+!!! example
+``` go
+    transforms.NewFilter([] {"Device1", "Device2"}).FilterByDeviceName
 ```
-E.G. NewFilter([] {"Device1", "Device2"}).FilterByDeviceName
-```
+
 
 ### Filtering
 
@@ -181,7 +183,7 @@ This `HTTPSender` instance is used to access the following functions that will u
   
   - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
 - `NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool)` - This function returns a `MQTTSecretSender` instance intialized with the options specfied in the `MQTTSecretConfig`.
-```golang
+```go
 type MQTTSecretConfig struct {
     // BrokerAddress should be set to the complete broker address i.e. mqtts://mosquitto:8883/mybroker
     BrokerAddress string
@@ -279,7 +281,7 @@ It is not uncommon to require your own API endpoints when building an app servic
 - /api/v1/config
 - /api/v1/trigger
 To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) error` function provided on the sdk. Here's an example:
-```golang
+```go
 edgexSdk.AddRoute("/myroute", func(writer http.ResponseWriter, req *http.Request) {
     context := req.Context().Value(appsdk.SDKKey).(*appsdk.AppFunctionsSDK) 
 		context.LoggingClient.Info("TEST") // alternative to edgexSdk.LoggingClient.Info("TEST")
