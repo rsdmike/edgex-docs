@@ -101,9 +101,12 @@ Each of the clients above is only initialized if the Clients section of the conf
 ### .PushToCore()
 `.PushToCore(string deviceName, string readingName, byte[] value)` is used to push data to EdgeX Core Data so that it can be shared with other applications that are subscribed to the message bus that core-data publishes to. `deviceName` can be set as you like along with the `readingName` which will be set on the EdgeX event sent to CoreData. This function will return the new EdgeX Event with the ID populated, however the CorrelationId will not be available.
 
- > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
+!!! note
+    If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
 
- > WARNING: Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
+!!! warning
+    Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
+
 ### .Complete()
 `.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
 
@@ -111,7 +114,8 @@ Each of the clients above is only initialized if the Clients section of the conf
 
 `.SetRetryData(payload []byte)` can be used to store data for later retry. This is useful when creating a custom export function that needs to retry on failure when sending the data. The payload data will be stored for later retry based on `Store and Forward` configuration. When the retry is triggered, the function pipeline will be re-executed starting with the function that called this API. That function will be passed the stored data, so it is important that all transformations occur in functions prior to the export function. The `Context` will also be restored to the state when the function called this API. See [Store and Forward](#store-and-forward) for more details.
 
-> NOTE: `Store and Forward` be must enabled when calling this API. 
+!!! note
+    `Store and Forward` be must enabled when calling this API. 
 
 ### .GetSecrets()
 
@@ -128,24 +132,28 @@ E.G. NewFilter([] {"Device1", "Device2"}).FilterByDeviceName
 ### Filtering
 
 There are two basic types of filtering included in the SDK to add to your pipeline. Theses provided Filter functions return a type of events.Model. If filtering results in no remaining data, the pipeline execution for that pass is terminated. If no values are provided for filtering, then data flows through unfiltered.
- - `NewFilter([]string filterValues)` - This function returns a `Filter` instance initialized with the passed in filter values. This `Filter` instance is used to access the following filter functions that will operate using the specified filter values.
+
+- `NewFilter([]string filterValues)` - This function returns a `Filter` instance initialized with the passed in filter values. This `Filter` instance is used to access the following filter functions that will operate using the specified filter values.
     - `FilterByDeviceName` - This function will filter the event data down to the specified device names and return the filtered data to the pipeline.
     - `FilterByValueDescriptor` - This function will filter the event data down to the specified device value descriptor and return the filtered data to the pipeline.
 
 #### JSON Logic
-  - `NewJSONLogic(rule string)` - This function returns a `JSONLogic` instance initialized with the passed in JSON rule. The rule passed in should be a JSON string conforming to the specification here: http://jsonlogic.com/operations.html. 
-      - `Evaluate` - This is the function that will be used in the pipeline to apply the JSON rule to data coming in on the pipeline. If the condition of your rule is met, then the pipeline will continue and the data will continue to flow to the next function in the pipeline. If the condition of your rule is NOT met, then pipeline execution stops. 
-  > NOTE: Only simple logic/filtering operators are supported. Manipulation of data via JSONLogic rules are not yet supported. For more advanced scenarios checkout [EMQ X Kuiper](https://github.com/emqx/kuiper).
+- `NewJSONLogic(rule string)` - This function returns a `JSONLogic` instance initialized with the passed in JSON rule. The rule passed in should be a JSON string conforming to the specification here: http://jsonlogic.com/operations.html. 
+    - `Evaluate` - This is the function that will be used in the pipeline to apply the JSON rule to data coming in on the pipeline. If the condition of your rule is met, then the pipeline will continue and the data will continue to flow to the next function in the pipeline. If the condition of your rule is NOT met, then pipeline execution stops. 
+
+!!! note
+    Only simple logic/filtering operators are supported. Manipulation of data via JSONLogic rules are not yet supported. For more advanced scenarios checkout [EMQ X Kuiper](https://github.com/emqx/kuiper).
 
 
 ### Encryption
 There is one encryption transform included in the SDK that can be added to your pipeline. 
 
 - `NewEncryption(key string, initializationVector string)` - This function returns a `Encryption` instance initialized with the passed in key and initialization vector. This `Encryption` instance is used to access the following encryption function that will use the specified key and initialization vector.
-  - `EncryptWithAES` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte` to the pipeline.
+    - `EncryptWithAES` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte` to the pipeline.
 
 ### Batch
 Included in the SDK is an in-memory batch function that will hold on to your data before continuing the pipeline. There are three functions provided for batching each with their own strategy.
+
 - `NewBatchByTime(timeInterval string)` - This function returns a `BatchConfig` instance with time being the strategy that is used for determining when to release the batched data and continue the pipeline. `timeInterval` is the duration to wait (i.e. `10s`). The time begins after the first piece of data is received. If no data has been received no data will be sent forward. 
 - `NewBatchByCount(batchThreshold int)` - This function returns a `BatchConfig` instance with count being the strategy that is used for determining when to release the batched data and continue the pipeline. `batchThreshold` is how many events to hold on to (i.e. `25`). The count begins after the first piece of data is received and once the threshold is met, the batched data will continue forward and the counter will be reset.
 - `NewBatchByTimeAndCount(timeInterval string, batchThreshold int)` - This function returns a `BatchConfig` instance with a combination of both time and count being the strategy that is used for determining when to release the batched data and continue the pipeline. Whichever occurs first will trigger the data to continue and be reset.
@@ -154,9 +162,9 @@ Included in the SDK is an in-memory batch function that will hold on to your dat
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
 
- - `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions: 
-    - `TransformToXML`  - This function receives an `events.Model` type, converts it to XML format and returns the XML string to the pipeline. 
-    - `TransformToJSON` - This function receives an `events.Model` type and converts it to JSON format and returns the JSON string to the pipeline.
+- `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions: 
+  - `TransformToXML`  - This function receives an `events.Model` type, converts it to XML format and returns the XML string to the pipeline. 
+  - `TransformToJSON` - This function receives an `events.Model` type and converts it to JSON format and returns the JSON string to the pipeline.
 
 ### Compressions
 There are two compression types included in the SDK that can be added to your pipeline. These transforms return a `[]byte`.
@@ -167,11 +175,13 @@ There are two compression types included in the SDK that can be added to your pi
 
 ### CoreData Functions
 These are functions that enable interactions with the CoreData REST API. 
+
 - `NewCoreData()` - This function returns a `CoreData` instance. This `CoreData` instance is used to access the following function(s).
-  - `MarkAsPushed` - This function provides the MarkAsPushed function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.MarkAsPushed()). The data passed into this function from the pipeline is passed along unmodifed since all required information is provided on the context (EventId, CorrelationId,etc.. )
-  - `PushToCore` - This function provides the PushToCore function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.PushToCore()). The data passed into this function from the pipeline is wrapped in an EdgeX event with the `deviceName` and `readingName` that were set upon the `CoreData` instance and then sent to Core Data service to be added as an event. Returns the new EdgeX event with ID populated.
+    - `MarkAsPushed` - This function provides the MarkAsPushed function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.MarkAsPushed()). The data passed into this function from the pipeline is passed along unmodifed since all required information is provided on the context (EventId, CorrelationId,etc.. )
+    - `PushToCore` - This function provides the PushToCore function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.PushToCore()). The data passed into this function from the pipeline is wrapped in an EdgeX event with the `deviceName` and `readingName` that were set upon the `CoreData` instance and then sent to Core Data service to be added as an event. Returns the new EdgeX event with ID populated.
     
-    > NOTE: If validation is turned on in Core Services then your `deviceName` and `readingName` must exist in the Core Metadata service and be properly registered in EdgeX. 
+!!! note
+    If validation is turned on in Core Services then your `deviceName` and `readingName` must exist in the Core Metadata service and be properly registered in EdgeX. 
 
 ### Export Functions
 There are few export functions included in the SDK that can be added to your pipeline. 
@@ -181,10 +191,11 @@ There are few export functions included in the SDK that can be added to your pip
 - `NewHTTPSenderWithSecretHeader(url string, mimeType string, persistOnError bool, httpHeaderSecretName string, secretPath string)` - This function returns a `HTTPSender` instance similar to the above function however will set up the `HTTPSender` to add a header to the HTTP request using the `httpHeaderSecretName` as both the header key  and the key to search for in the secret provider at `secretPath` leveraging secure storage of secrets. 
 This `HTTPSender` instance is used to access the following functions:
   
-  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details. 
+    - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details. 
   
 - `NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool)` - This function returns a `MQTTSecretSender` instance initialized with the options specified in the `MQTTSecretConfig`.
-  ```go
+
+``` go
   type MQTTSecretConfig struct {
     // BrokerAddress should be set to the complete broker address i.e. mqtts://mosquitto:8883/mybroker
     BrokerAddress string
@@ -208,7 +219,7 @@ This `HTTPSender` instance is used to access the following functions:
     // all modes except "none". 
     AuthMode string
   }
-  ```
+```
   Secrets in the secret provider may be located at any path however they must have some or all the follow keys at the specified `SecretPath`. 
 
   - `username` - username to connect to the broker
@@ -219,58 +230,64 @@ This `HTTPSender` instance is used to access the following functions:
 
   What `AuthMode` you choose depends on what values are used. For example, if "none" is specified as auth mode all keys will be ignored. Similarly, if `AuthMode` is set to "clientcert" username and password will be ignored.
 
-- **DEPRECATED**`NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
+- **DEPRECATED** `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
   
-  - `KeyCertPair` - This structure holds the Key and Certificate information for when using secure **TLS** connection to the broker. Can be `nil` if not using secure **TLS** connection. 
-  
-  - `MqttConfig` - This structure holds addition MQTT configuration settings. 
-  
-    ```
-    	Qos            byte
-    	Retain         bool
-    	AutoReconnect  bool
-    	SkipCertVerify bool
-    	User           string
-    	Password       string
-    ```
-  
-    The `GO` complier will default these to `0`, `false` and `""`, so you only need to set the fields that your usage requires that differ from the default.
-  
-  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. If the send fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
+    - `KeyCertPair` - This structure holds the Key and Certificate information for when using secure **TLS** connection to the broker. Can be `nil` if not using secure **TLS** connection. 
+    
+    - `MqttConfig` - This structure holds addition MQTT configuration settings. 
+    
+      ```
+        Qos            byte
+        Retain         bool
+        AutoReconnect  bool
+        SkipCertVerify bool
+        User           string
+        Password       string
+      ```
+    
+      The `GO` complier will default these to `0`, `false` and `""`, so you only need to set the fields that your usage requires that differ from the default.
+    
+    - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. If the send fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
 
 ### Output Functions
 
 There is one output function included in the SDK that can be added to your pipeline. 
 
-- NewOutput() - This function returns a `Output` instance that is used to access the following output function: 
+- `NewOutput()` - This function returns a `Output` instance that is used to access the following output function: 
   
-  - `SetOutput` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sets it as the output data for the pipeline to return to the configured trigger. If configured to use message bus, the data will be published to the message bus as determined by the `MessageBus` and `Binding` configuration. If configured to use HTTP trigger the data is returned as the HTTP response. 
+    - `SetOutput` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sets it as the output data for the pipeline to return to the configured trigger. If configured to use message bus, the data will be published to the message bus as determined by the `MessageBus` and `Binding` configuration. If configured to use HTTP trigger the data is returned as the HTTP response. 
   
-    > *Note that calling Complete() from the Context API in a custom function can be used in place of adding this function to your pipeline*
+!!! note
+    Calling Complete() from the Context API in a custom function can be used in place of adding this function to your pipeline*
 
 ## Configuration
 
 Similar to other EdgeX services, configuration is first determined by the `configuration.toml` file in the `/res` folder. If `-cp` is passed to the application on startup, the SDK will leverage the specific configuration provider (i.e Consul) to push configuration from the file into the registry and monitor configuration from there. You will find the configuration under the `edgex/appservices/1.0/` key. There are two primary sections in the `configuration.toml` file that will need to be set that are specific to the AppFunctionsSDK. 
+
   1) `[Binding]` - This specifies the [trigger](#triggers) type and associated data required to configure a trigger. 
 
-  ```toml
-  [Binding]
-  Type=""
-  SubscribeTopic=""
-  PublishTopic=""
-  ```
+``` toml
+[Binding]
+Type=""
+SubscribeTopic=""
+PublishTopic=""
+```
+
   2) `[ApplicationSettings]` - Is used for custom application settings and is accessed via the ApplicationSettings() API. The ApplicationSettings API returns a `map[string] string` containing the contents on the ApplicationSetting section of the `configuration.toml` file.
- ```toml
- [ApplicationSettings]
- ApplicationName = "My Application Service"
- ```
+
+```toml
+[ApplicationSettings]
+ApplicationName = "My Application Service"
+```
 
 ## Error Handling
- - Each transform returns a `true` or `false` as part of the return signature. This is called the `continuePipeline` flag and indicates whether the SDK should continue calling successive transforms in the pipeline.
+Each transform returns a `true` or `false` as part of the return signature. This is called the `continuePipeline` flag and indicates whether the SDK should continue calling successive transforms in the pipeline.
+
  - `return false, nil` will stop the pipeline and stop processing the event. This is useful for example when filtering on values and nothing matches the criteria you've filtered on. 
  - `return false, error`, will stop the pipeline as well and the SDK will log the error you have returned.
  - `return true, nil` tells the SDK to continue, and will call the next function in the pipeline with your result.
- - The SDK will return control back to main when receiving a SIGTERM/SIGINT event to allow for custom clean up.
+
+The SDK will return control back to main when receiving a SIGTERM/SIGINT event to allow for custom clean up.
 
 
 ## Advanced Topics
@@ -284,20 +301,17 @@ This SDK provides the capability to define the functions pipeline via configurat
 ### Using The Webserver
 
 It is not uncommon to require your own API endpoints when building an app service. Rather than spin up your own webserver inside of your app (alongside the already existing running webserver), we've exposed a method that allows you add your own routes to the existing webserver. A few routes are reserved and cannot be used:
+
 - /api/version
-
 - /api/v1/ping
-
 - /api/v1/metrics
-
 - /api/v1/config
-
 - /api/v1/trigger
-
 - /api/v1/secrets
 
 To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) error` function provided on the sdk. Here's an example:
-```go
+
+``` go
 edgexSdk.AddRoute("/myroute", func(writer http.ResponseWriter, req *http.Request) {
     context := req.Context().Value(appsdk.SDKKey).(*appsdk.AppFunctionsSDK) 
 		context.LoggingClient.Info("TEST") // alternative to edgexSdk.LoggingClient.Info("TEST")
@@ -320,7 +334,7 @@ For usages where the incoming data is not `events`, the `TargetType` of the exce
 
 Example:
 
-```
+``` go
 type Person struct {
     FirstName string `json:"first_name"`
     LastName  string `json:"last_name"`
@@ -334,7 +348,7 @@ edgexSdk := &appsdk.AppFunctionsSDK {
 
 Note that `TargetType` must be set to a pointer to an instance of your target type such as `&Person{}` . The first function in your function pipeline will be passed an instance of your target type, not a pointer to it. In the example above the first function in the pipeline would start something like:
 
-```
+``` go
 func MyPersonFunction(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 
 	edgexcontext.LoggingClient.Debug("MyPersonFunction")
@@ -347,9 +361,9 @@ func MyPersonFunction(edgexcontext *appcontext.Context, params ...interface{}) (
 	person, ok := params[0].(Person)
 	if !ok {
         return false, errors.New("type received is not a Person")
-	}
-	
-	....
+  }		
+  // ....
+}
 ```
 
 The SDK supports un-marshaling JSON or CBOR encoded data into an instance of the target type. If your incoming data is not JSON or CBOR encoded, you then need to set the `TargetType` to  `&[]byte`.
@@ -360,7 +374,7 @@ If the target type is set to `&[]byte` the incoming data will not be un-marshale
 
 The following command line options are available
 
-```
+``` bash
   -c=<path>
   --confdir=<path>
         Specify an alternate configuration directory.
@@ -398,13 +412,13 @@ The following command line options are available
 
 Examples:
 
-```
+``` bash
 simple-filter-xml -c=./res -p=http-export
 ```
 
 or
 
-```
+``` bash
 simple-filter-xml --confdir=./res -p=http-export -cp=consul.http://localhost:8500 --registry
 ```
 
@@ -418,7 +432,8 @@ All the configuration settings from the configuration.toml file can be overridde
 <TOML SECTION>_<TOML SUB-SECTION>_<TOML KEY>
 ```
 
-> *Note: With the Geneva release CamelCase environment variable names are deprecated. Instead use all uppercase environment variable names as in the example below.*
+!!! note
+    With the Geneva release CamelCase environment variable names are deprecated. Instead use all uppercase environment variable names as in the example below.*
 
 Examples:
 
@@ -440,16 +455,13 @@ ENVVAR : CLIENTS_COREDATA_HOST=edgex-core-data
 
 This environment variable overrides the service key used with the Configuration and/or Registry providers. Default is set by the application service. Also overrides any value set with the -sk/--serviceKey command-line option.
 
-> *Note: If the name provided contains the text `<profile>`, this text will be replaced with the name of the profile used.*
+!!! note
+    If the name provided contains the text `<profile>`, this text will be replaced with the name of the profile used.*
 
-Example:
+!!! example
+    `EDGEX_SERVICE_KEY=AppService-<profile>-mycloud` and profile used is http-export then the service key will be:
+    `AppService-http-export-mycloud`
 
-```
-EDGEX_SERVICE_KEY=AppService-<profile>-mycloud
-and profile used is http-export 
-then the service key will be:
-   AppService-http-export-mycloud
-```
 
 ### EDGEX_CONFIGURATION_PROVIDER
 
@@ -468,7 +480,8 @@ This sets the Configration Provider information fields as follows:
 
 This environment variable overrides the Registry connection information and occurs every time the application service starts. The value is in the format of a URL.
 
-> *Note: This environment variable override has been deprecated in the Geneva Release. Instead, use configuration overrides of **REGISTRY_PROTOCOL** and/or **REGISTRY_HOST** and/or **REGISTRY_PORT***
+!!! note
+    This environment variable override has been deprecated in the Geneva Release. Instead, use configuration overrides of **REGISTRY_PROTOCOL** and/or **REGISTRY_HOST** and/or **REGISTRY_PORT***
 
 ```
 EDGEX_REGISTRY=consul://edgex-core-consul:8500
@@ -483,7 +496,8 @@ This sets the Registry information fields as follows:
 
 This environment variable overrides the Service connection information. The value is in the format of a URL.
 
-> *Note: This environment variable override has been deprecated in the Geneva Release. Instead, use configuration overrides of **SERVICE_PROTOCOL** and/or **SERVICE_HOST** and/or **SERVICE_PORT***
+!!! note
+    This environment variable override has been deprecated in the Geneva Release. Instead, use configuration overrides of **SERVICE_PROTOCOL** and/or **SERVICE_HOST** and/or **SERVICE_PORT***
 
 ```
 EDGEX_SERVICE=http://192.168.1.2:4903
@@ -498,7 +512,8 @@ This sets the Service information fields as follows:
 
 This environment variable overrides the command line `profile` argument. It will set the `profile` or replace the value passed via the `-p` or `--profile`, if one exists. This is useful when running the service via docker-compose.
 
-> *Note: The lower case version has been deprecated* in the Geneva release. Instead use upper case version **EDGEX_PROFILE**
+!!! note
+    The lower case version has been deprecated* in the Geneva release. Instead use upper case version **EDGEX_PROFILE**
 
 Using docker-compose:
 
@@ -522,7 +537,8 @@ Using docker-compose:
 
 This sets the `profile` so that the application service uses the `rules-engine` configuration profile which resides at `/res/rules-engine/configuration.toml`
 
-> *Note that EdgeX Services no longer use docker profiles. They use Environment Overrides in the docker compose file to make the necessary changes to the configuration for running in Docker. See the **Environment Variable Overrides For Docker** section in the [App Service Configurable](./AppServiceConfigurable.md#environment-variable-overrides-for-docker)* section for more details and an example. 
+!!! note
+    EdgeX Services no longer use docker profiles. They use Environment Overrides in the docker compose file to make the necessary changes to the configuration for running in Docker. See the **Environment Variable Overrides For Docker** section in the [App Service Configurable](./AppServiceConfigurable.md#environment-variable-overrides-for-docker)* section for more details and an example. 
 
 #### EDGEX_STARTUP_DURATION
 
@@ -544,7 +560,8 @@ This environment variable overrides the configuration file name. Default is `con
 
 The Store and Forward capability allows for export functions to persist data on failure and for the export of the data to be retried at a later time. 
 
-> *Note: The order the data exported via this retry mechanism is not guaranteed to be the same order in which the data was initial received from Core Data*
+!!! note
+    The order the data exported via this retry mechanism is not guaranteed to be the same order in which the data was initial received from Core Data*
 
 #### Configuration
 
@@ -559,11 +576,10 @@ Two sections of configuration have been added for Store and Forward.
   MaxRetryCount = 10
 ```
 
-> *Note: RetryInterval should be at least 1 second (eg. '1s') or greater. If a value less than 1 second is specified, 1 second will be used.*
-
-> *Note: Endless retries will occur when MaxRetryCount is set to 0.*
-
-> *Note: If MaxRetryCount is set to less than 0, a default of 1 retry will be used.*
+!!! note
+    RetryInterval should be at least 1 second (eg. '1s') or greater. If a value less than 1 second is specified, 1 second will be used.
+    Endless retries will occur when MaxRetryCount is set to 0.
+    If MaxRetryCount is set to less than 0, a default of 1 retry will be used.
 
 Database describes which database type to use, `mongodb` (DEPRECATED) or `redisdb`, and the information required to connect to the database. This section is required if Store and Forward is enabled, otherwise it is currently optional.
 
@@ -581,11 +597,13 @@ Password = ""
 
 When an export function encounters an error sending data it can call `SetRetryData(payload []byte)` on the Context. This will store the data for later retry. If the application service is stop and then restarted while stored data hasn't been successfully exported, the export retry will resume once the service is up and running again.
 
-> *Note: It is important that export functions return an error and stop pipeline execution* after the call to `SetRetryData`. See [HTTPPost](https://github.com/edgexfoundry/app-functions-sdk-go/blob/master/pkg/transforms/http.go) function in SDK as an example
+!!! note
+    It is important that export functions return an error and stop pipeline execution* after the call to `SetRetryData`. See [HTTPPost](https://github.com/edgexfoundry/app-functions-sdk-go/blob/master/pkg/transforms/http.go) function in SDK as an example
 
 When the `RetryInterval` expires, the function pipeline will be re-executed starting with the export function that saved the data. The saved data will be passed to the export function which can then attempt to resend the data. 
 
-> *NOTE: The export function will receive the data as it was stored, so it is important that any transformation of the data occur in functions prior to the export function. The export function should only export the data that it receives.*
+!!! note
+    The export function will receive the data as it was stored, so it is important that any transformation of the data occur in functions prior to the export function. The export function should only export the data that it receives.
 
 One of three out comes can occur after the export retried has completed. 
 
@@ -601,7 +619,8 @@ One of three out comes can occur after the export retried has completed.
 
    In this case the store data is removed from the database and never retried again.
 
-> *NOTE: Changing Writable.Pipeline.ExecutionOrder will invalidate all currently stored data and result in it all being removed from the database on the next retry.* This is because the position of the export function can no longer be guaranteed and no way to ensure it is properly executed on the retry.
+!!! note
+    Changing `Writable.Pipeline.ExecutionOrder` will invalidate all currently stored data and result in it all being removed from the database on the next retry. This is because the position of the export function can no longer be guaranteed and no way to ensure it is properly executed on the retry.
 
 ### Secrets
 
@@ -668,7 +687,8 @@ An example of the JSON message body is below.
 }
 ```
 
-> *Note: path specifies the type or location of the secrets to store. It is appended to the base path from the SecretStoreExclusive configuration. An empty path is a valid configuration for a secret's location.*
+!!! note
+    `path` specifies the type or location of the secrets to store. It is appended to the base path from the SecretStoreExclusive configuration. An empty path is a valid configuration for a secret's location.
 
 ##### Insecure Mode
 
@@ -688,8 +708,8 @@ When running in insecure mode, the secrets are stored and retrieved from the *Wr
           username = ''
           password = ''
 ```
-
-> *Note: An empty path is a valid configuration for a secret's location* 
+!!! note
+    An empty path is a valid configuration for a secret's location
 
 #### Getting Secrets
 

@@ -35,7 +35,8 @@ The first line of note is `ExecutionOrder = "FilterByDeviceName, TransformToXML,
 Next, each function and its required information is listed. Each function typically has associated Parameters that must be configured to properly execute the function as designated by `[Writable.Pipeline.Functions.{FunctionName}.Parameters]`. Knowing which parameters are required for each function, can be referenced by taking a look at the `Transforms` documentation located in the [Application Functions SDK](./ApplicationFunctionsSDK.md#built-in-transformsfunctions) section. In a few cases, such as `TransformToXML`, `TransformToJSON`, or `SetOutputData`, there are no parameters required.
 
 
-> Note: By default, the configuration provided is set to use MessageBus as a trigger from CoreData. This means you must have EdgeX Running with devices sending data in order to trigger the pipeline. You can also change the trigger to be HTTP. For more on triggers, view the `Triggers`documentation located in the [Triggers](./Triggers.md) section.
+!!! note
+    By default, the configuration provided is set to use MessageBus as a trigger from CoreData. This means you must have EdgeX   Running with devices sending data in order to trigger the pipeline. You can also change the trigger to be HTTP. For more  on triggers, view the `Triggers`documentation located in the [Triggers](./Triggers.md) section.
 
 That's it! Now we can run/deploy this service and the functions pipeline will process the data with functions we've defined.
 
@@ -75,58 +76,60 @@ The following is an example docker compose entry for **App Service Configurable*
 ```
 
 !!! note
-**App Service Configurable** is designed to be run multiple times each with different profiles. This is why in the above example the name `edgex-app-service-configurable-rules` is used for the instance running the `rules-engine` profile.
+    **App Service Configurable** is designed to be run multiple times each with different profiles. This is why in the above example the name `edgex-app-service-configurable-rules` is used for the instance running the `rules-engine` profile.
 
 ## Deploying Multiple Instances using profiles
 
 App Service Configurable was designed to be deployed as multiple instances with different purposes. Since the function pipeline is specified in the `configuration.toml` file, we can use this as a way to run each instance with a different function pipeline. App Service Configurable does not have the standard default configuration at `/res/configuration.toml`. This default configuration has been moved to the `sample` profile. This forces you to specify the profile for the configuration you would like to run. The profile is specified using the `-p/--profile=[profilename]` command line option or the `EDGEX_PROFILE=[profilename]` environment variable override. The profile name selected is used in the service key (`AppService-[profile name]`) to make each instance unique, e.g. `AppService-sample` when specifying `sample` as the profile.
 
 !!! note
-If you need to run multiple instances with the same profile, e.g. `http-export`, but configured differently, you will need to override the service key with a custom name for one or more of the services. This is done with the `-sk/-serviceKey` command-line option or the `EDGEX_SERVICE_KEY` environment variable. See the `Command-line Options` and `Environment Overrides` documentation located in the [Application Functions SDK](./ApplicationFunctionsSDK.md#command-line-options) section for more detail.
+    If you need to run multiple instances with the same profile, e.g. `http-export`, but configured differently, you will need to override the service key with a custom name for one or more of the services. This is done with the `-sk/-serviceKey` command-line option or the `EDGEX_SERVICE_KEY` environment variable. See the `Command-line Options` and `Environment Overrides` documentation located in the [Application Functions SDK](./ApplicationFunctionsSDK.md#command-line-options) section for more detail.
 
 The following profiles and their purposes are provided with App Service Configurable. 
 
 - **blackbox-tests** - Profile used for black box testing the SDK 
 - **http-export** - Starter profile used for exporting data via HTTP. 
   Requires further configuration which can easily be accomplished using environment variable overrides
-  - Required:
     
-    - `Writable_Pipeline_Functions_HTTPPostJSON_Parameters_url:[Your URL]`
-  - Optional: 
-    
-    - `Writable_Pipeline_Functions_HTTPPostJSON_Parameters_persistOnError:["true"/"false"]`
-    
-    - `Writable_Pipeline_Functions_FilterByDeviceName_Parameters_DeviceNames:"[comma separated list]"`
-    
-    - `Writable_Pipeline_Functions_FilterByValueDescriptor_Parameters_ValueDescriptors: "[comma separated list]"`
+    - Required:
+
+    `Writable_Pipeline_Functions_HTTPPostJSON_Parameters_url: [Your URL]`
+
+    - Optional:
+```toml       
+Writable_Pipeline_Functions_HTTPPostJSON_Parameters_persistOnError: ["true"/"false"]
+Writable_Pipeline_Functions_FilterByDeviceName_Parameters_DeviceNames: "[comma separated list]"
+Writable_Pipeline_Functions_FilterByValueDescriptor_Parameters_ValueDescriptors: "[comma separated list]"
+```
 - **mqtt-export** - Starter profile used for exporting data via MQTT.
   Requires further configuration which can easily be accomplished using environment variable overrides
-  - Required:
-    
-    - `Writable_Pipeline_Functions_MQTTSend_Addressable_Address:[Your Address]`
-  - Optional: 
-    - `Writable_Pipeline_Functions_MQTTSend_Addressable`
-      - `_Port:["your port"]`
-      - `_Protocol:[tcp or tcps]`  
-      - `_Publisher:[your name]`
-      - `_User:[your username]`
-      - `_Password:[your passowrd`
-      - `_Topic:[your topic]`
-    
-    - `Writable_Pipeline_Functions_MQTTSend_Parameters`
-      - `_qos:["your quality or service"]`
-      - `_key:[your Key]`  
-      - `_cert:[your Certificate]`
-      - `_autoreconnect:["true" or "false"]`
-      - `_retain:["true" or "false"]`
-      - `_persistOnError:["true" or "false"]`
+    - Required:
+
+        - `Writable_Pipeline_Functions_MQTTSend_Addressable_Address: [Your Address]`
+
+    - Optional: 
+```toml
+Writable_Pipeline_Functions_MQTTSend_Addressable_Port: ["your port"]
+Writable_Pipeline_Functions_MQTTSend_Addressable_Protocol: [tcp/tcps]  
+Writable_Pipeline_Functions_MQTTSend_Addressable_Publisher: [your name]
+Writable_Pipeline_Functions_MQTTSend_Addressable_User: [your username]
+Writable_Pipeline_Functions_MQTTSend_Addressable_Password: [your password]
+Writable_Pipeline_Functions_MQTTSend_Addressable_Topic: [your topic]
+
+Writable_Pipeline_Functions_MQTTSend_Parameters_qos: ["your quality of service"]
+Writable_Pipeline_Functions_MQTTSend_Parameters_key: [your Key]  
+Writable_Pipeline_Functions_MQTTSend_Parameters_cert: [your Certificate]
+Writable_Pipeline_Functions_MQTTSend_Parameters_autoreconnect: ["true"/"false"]
+Writable_Pipeline_Functions_MQTTSend_Parameters_retain: ["true"/"false"]
+Writable_Pipeline_Functions_MQTTSend_Parameters_persistOnError: ["true"/"false"]
+```
 - **rules-engine** - Profile used to push Event messages to the Rules Engine via **ZMQ** Message Bus.
 - **rules-engine-mqtt** - Profile used to push Event messages to the Rules Engine via **MQTT** Message Bus.
 - **rules-engine-redis** Profile used to push Event messages to the Rules Engine via **RedisStreams** Message Bus.
 - **sample** - Sample profile with all available functions declared and a sample pipeline. Provided as a sample that can be copied and modified to create new custom profiles.
 
 !!! note
-Functions can be declared in a profile but not used in the pipeline `ExecutionOrder`  allowing them to be added to the pipeline `ExecutionOrder` later at runtime if needed.
+    Functions can be declared in a profile but not used in the pipeline `ExecutionOrder`  allowing them to be added to the pipeline `ExecutionOrder` later at runtime if needed.
 
 ## Input Data Not An EdgeX Event
 
