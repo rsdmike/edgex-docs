@@ -22,7 +22,15 @@ specified. The first function in a pipeline is a trigger. A trigger
 begins the functions pipeline execution. A trigger is something like a
 message landing in a watched message queue.
 
-![image](TriggersFunctions.png)
+```mermaid
+graph LR;
+    A(EdgeX Core Data)-. message bus .-> B
+    subgraph <br/>Application Service
+    B(Trigger<br/>Function) --> C;
+    C(Function A) --> D(Function B);
+    D --> E(...)
+    end
+```
 
 An Applications Functions Software Development Kit (or App Functions
 SDK) is available to help create Application Services. Currently the
@@ -53,7 +61,17 @@ pipeline. In the future, additional functions will be provided
 developers can implement their own custom functions and add those to their
 Application Service functions pipeline.
 
-![image](SDKFunctions.png)
+```mermaid
+graph LR;
+    subgraph <br/>Application Service
+    B(Trigger<br/>Function) --> C(Device Name Filter Function)
+    C(Device Name<br/>Filter Function) --> D(Value Descriptor Filter Function)
+    D(Value Descriptor<br/>Filter Function) --> E(XML Transform<br/>Function)
+    OR(OR)
+    D(Value Descriptor<br/>Filter Function) --> F(JSON Transform<br/>Function)
+    end
+    style OR fill:none,stroke:none
+```
 
 One of the most common use cases for working with data that comes from
 Core Data is to filter data down to what is relevant for a given
