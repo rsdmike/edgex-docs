@@ -132,7 +132,6 @@ extra_css:
 - assets\stylesheets\version-select.css
 - assets\stylesheets\branding.css
 - assets\stylesheets\mermaid.css
-  # - https://unpkg.com/mermaid@7.1.2/dist/mermaid.css
 
 extra_javascript:
 - assets\javascripts\version-select.js
