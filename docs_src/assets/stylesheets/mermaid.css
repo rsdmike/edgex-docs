@@ -1,8 +1,4 @@
-#B.node rect {
-    fill: hsla(282, 65%, 19%, 1) !important;
+.cluster rect {
+    fill: hsl(281, 69%, 90%) !important;
+    stroke: #888 !important;
 }
-
-#B .label {
-    color: white !important;
-}
-

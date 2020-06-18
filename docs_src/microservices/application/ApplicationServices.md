@@ -30,6 +30,7 @@ graph LR;
     C(Function A) --> D(Function B);
     D --> E(...)
     end
+    style B fill:#3d1150,color: white
 ```
 
 An Applications Functions Software Development Kit (or App Functions
@@ -71,6 +72,7 @@ graph LR;
     D(Value Descriptor<br/>Filter Function) --> F(JSON Transform<br/>Function)
     end
     style OR fill:none,stroke:none
+    style B fill:#3d1150,color: white
 ```
 
 One of the most common use cases for working with data that comes from
